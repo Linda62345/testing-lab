@@ -108,4 +108,48 @@ describe('Todo API Testing', () => {
     const result = JSON.parse(response.body)
     expect(result).toStrictEqual({ msg: 'Not Found Todo:not-exist-id' })
   })
+
+  test('Given a valid todo payload, When receive a POST /api/v1/todos request, Then it should response the created todo with status code 201', async () => {
+    // arrange: mock the repo function to return a created todo
+    const createdTodo: Todo = {
+      id: '3',
+      name: 'todo 3',
+      description: 'description 3',
+      status: false
+    }
+    vi.spyOn(TodoRepo, 'createTodo').mockImplementation(async () => createdTodo)
+
+    // act: receive a POST /api/v1/todos request
+    const response = await server.inject({
+      method: 'POST',
+      url: '/api/v1/todos',
+      payload: {
+        name: 'todo 3',
+        description: 'description 3'
+      }
+    })
+
+    // assert: response should be the created todo
+    expect(response.statusCode).toBe(201)
+    const todo = JSON.parse(response.body)['todo']
+    expect(todo).toStrictEqual(createdTodo)
+  })
+
+  test('Given a valid ID, When receive a DELETE /api/v1/todos/:id request, Then it should response with status code 204', async () => {
+    // arrange: mock the repo function to return a deleted todo result
+    vi.spyOn(TodoRepo, 'deleteTodoById').mockImplementation(async () => ({
+      acknowledged: true,
+      deletedCount: 1
+    }) as any)
+
+    // act: receive a DELETE /api/v1/todos/:id request
+    const response = await server.inject({
+      method: 'DELETE',
+      url: '/api/v1/todos/1'
+    })
+
+    // assert: response should be no content
+    expect(response.statusCode).toBe(204)
+    expect(response.body).toBe('')
+  })
 })
