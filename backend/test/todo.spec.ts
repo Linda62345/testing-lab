@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from 'vite
 import { serverOf } from '../src/server'
 import * as TodoRepo from '../src/repo/todo'
 import { FastifyInstance } from 'fastify'
-import { Todo, TodoBody } from '../src/types/todo'
+import { Todo } from '../src/types/todo'
 
 describe('Todo API Testing', () => {
   let server: FastifyInstance
@@ -67,18 +67,45 @@ describe('Todo API Testing', () => {
 
   test('Given a valid ID and status, When receive a PUT /api/v1/todos/:id request, Then it should response the updated todo object', async () => {
     // arrange: mock the repo function to return an updated todo object
+    const updatedTodo: Todo = {
+      id: '1',
+      name: 'todo 1',
+      description: 'description 1',
+      status: true
+    }
+    vi.spyOn(TodoRepo, 'updateTodoById').mockImplementation(async () => updatedTodo)
 
     // act: receive a PUT /api/v1/todos/:id request
+    const response = await server.inject({
+      method: 'PUT',
+      url: '/api/v1/todos/1',
+      payload: {
+        status: true
+      }
+    })
 
     // assert: response should be the updated todo object
+    expect(response.statusCode).toBe(200)
+    const todo = JSON.parse(response.body)['todo']
+    expect(todo).toStrictEqual(updatedTodo)
   })
 
   test('Given an invalid ID, When receive a PUT /api/v1/todos/:id request, Then it should response with status code 404', async () => {
     // arrange: mock the repo function to return null
+    vi.spyOn(TodoRepo, 'updateTodoById').mockImplementation(async () => null)
 
     // act: receive a PUT /api/v1/todos/:id request
+    const response = await server.inject({
+      method: 'PUT',
+      url: '/api/v1/todos/not-exist-id',
+      payload: {
+        status: true
+      }
+    })
 
     // assert: response should with status code 404
-
+    expect(response.statusCode).toBe(404)
+    const result = JSON.parse(response.body)
+    expect(result).toStrictEqual({ msg: 'Not Found Todo:not-exist-id' })
   })
 })
